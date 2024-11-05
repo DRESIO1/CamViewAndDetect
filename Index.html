@@ -184,33 +184,28 @@
         }
         let startTimeMs = performance.now();
 
-        if (startTimeMs < waitTime) {
-          console.log("waiting...");
-        } else {
+        if (lastVideoTime !== video.currentTime) {
+          lastVideoTime = video.currentTime;
+          poseLandmarker.detectForVideo(video, startTimeMs, (result) => {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            for (const landmark of result.landmarks) {
+              // console.log(landmark);
+              drawingUtils.drawLandmarks(landmark, {
+                radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+              });
+              drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
+            }
+            canvasCtx.restore();
 
-          if (lastVideoTime !== video.currentTime) {
-            lastVideoTime = video.currentTime;
-            poseLandmarker.detectForVideo(video, startTimeMs, (result) => {
-              canvasCtx.save();
-              canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-              for (const landmark of result.landmarks) {
-                // console.log(landmark);
-                drawingUtils.drawLandmarks(landmark, {
-                  radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
-                });
-                drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
-              }
-              canvasCtx.restore();
+            // Draw the final canvas.
+            finalCanvasCtx.save();
+            finalCanvasCtx.clearRect(0, 0, finalCanvasElement.width, finalCanvasElement.height);
+            finalCanvasCtx.drawImage(video, 0, 0, finalCanvasElement.width, finalCanvasElement.height);
+            finalCanvasCtx.drawImage(canvasElement, 0, 0, finalCanvasElement.width, finalCanvasElement.height);
+            finalCanvasCtx.restore();
 
-              // Draw the final canvas.
-              finalCanvasCtx.save();
-              finalCanvasCtx.clearRect(0, 0, finalCanvasElement.width, finalCanvasElement.height);
-              finalCanvasCtx.drawImage(video, 0, 0, finalCanvasElement.width, finalCanvasElement.height);
-              finalCanvasCtx.drawImage(canvasElement, 0, 0, finalCanvasElement.width, finalCanvasElement.height);
-              finalCanvasCtx.restore();
-
-            });
-          }
+          });
         }
 
         // Call this function again to keep predicting when the browser is ready.
