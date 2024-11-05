@@ -137,9 +137,6 @@
       finalCanvasElement.style.display = "block";
       adjustCanvasSize();
 
-      // define a variable for the detection to wait 5 seconds before starting
-      let waitTime = 5000;
-
       // Check if webcam access is supported.
       const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
 
@@ -183,29 +180,32 @@
           await poseLandmarker.setOptions({ runningMode: "VIDEO" });
         }
         let startTimeMs = performance.now();
+        try {
+          if (lastVideoTime !== video.currentTime) {
+            lastVideoTime = video.currentTime;
+            poseLandmarker.detectForVideo(video, startTimeMs, (result) => {
+              canvasCtx.save();
+              canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+              for (const landmark of result.landmarks) {
+                // console.log(landmark);
+                drawingUtils.drawLandmarks(landmark, {
+                  radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
+                });
+                drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
+              }
+              canvasCtx.restore();
 
-        if (lastVideoTime !== video.currentTime) {
-          lastVideoTime = video.currentTime;
-          poseLandmarker.detectForVideo(video, startTimeMs, (result) => {
-            canvasCtx.save();
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            for (const landmark of result.landmarks) {
-              // console.log(landmark);
-              drawingUtils.drawLandmarks(landmark, {
-                radius: (data) => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
-              });
-              drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
-            }
-            canvasCtx.restore();
+              // Draw the final canvas.
+              finalCanvasCtx.save();
+              finalCanvasCtx.clearRect(0, 0, finalCanvasElement.width, finalCanvasElement.height);
+              finalCanvasCtx.drawImage(video, 0, 0, finalCanvasElement.width, finalCanvasElement.height);
+              finalCanvasCtx.drawImage(canvasElement, 0, 0, finalCanvasElement.width, finalCanvasElement.height);
+              finalCanvasCtx.restore();
 
-            // Draw the final canvas.
-            finalCanvasCtx.save();
-            finalCanvasCtx.clearRect(0, 0, finalCanvasElement.width, finalCanvasElement.height);
-            finalCanvasCtx.drawImage(video, 0, 0, finalCanvasElement.width, finalCanvasElement.height);
-            finalCanvasCtx.drawImage(canvasElement, 0, 0, finalCanvasElement.width, finalCanvasElement.height);
-            finalCanvasCtx.restore();
-
-          });
+            });
+          }
+        } catch (e) {
+          // console.error(e);
         }
 
         // Call this function again to keep predicting when the browser is ready.
