@@ -105,7 +105,7 @@
         poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task`,
-            delegate: "CPU"
+            delegate: "GPU"
           },
           runningMode: runningMode,
           numPoses: 1,
@@ -125,7 +125,7 @@
 
       const video = document.getElementById("webcam");
       // turn off display of video element
-      video.style.display = "none";
+      
       const canvasElement = document.getElementById("output_canvas");
       const canvasCtx = canvasElement.getContext("2d");
       const drawingUtils = new DrawingUtils(canvasCtx);
@@ -207,6 +207,9 @@
               finalCanvasCtx.restore();
 
             });
+            if (video.style.display !== "none") {
+              video.style.display = "none";
+            }
           }
         } catch (e) {
           // console.error(e);
