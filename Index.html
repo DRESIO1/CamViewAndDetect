@@ -169,17 +169,21 @@
       }
 
       let lastVideoTime = -1;
+      
       async function predictWebcam() {
         canvasElement.style.height = videoHeight;
         video.style.height = videoHeight;
         canvasElement.style.width = videoWidth;
         video.style.width = videoWidth;
+
         // Now let's start detecting the stream.
         if (runningMode === "IMAGE") {
           runningMode = "VIDEO";
           await poseLandmarker.setOptions({ runningMode: "VIDEO" });
         }
+
         let startTimeMs = performance.now();
+
         try {
           if (lastVideoTime !== video.currentTime) {
             lastVideoTime = video.currentTime;
