@@ -70,6 +70,64 @@
 
   <script type="module">
 
+    /********************************************************************
+    Continuously grab image from webcam stream.
+    ********************************************************************/
+
+    const video = document.getElementById("webcam");    
+    const canvasElement = document.getElementById("output_canvas");
+    const canvasCtx = canvasElement.getContext("2d");
+    
+    // trun off display of canvas element
+    canvasElement.style.display = "none";
+    // Create a canvas element to display the final output.
+    const finalCanvasElement = document.getElementById("final_canvas");
+    const finalCanvasCtx = finalCanvasElement.getContext("2d");
+    finalCanvasElement.style.display = "block";
+
+    function adjustCanvasSize() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      finalCanvasElement.width = width;
+      finalCanvasElement.height = height;
+    }
+
+    adjustCanvasSize();
+
+    // Check if webcam access is supported.
+    const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
+
+    // If webcam supported, add event listener to button for when user
+    // wants to activate it.
+    if (hasGetUserMedia()) {
+      enableCam();
+    } else {
+      console.warn("getUserMedia() is not supported by your browser");
+    }
+
+    // Enable the live webcam view and start detection.
+    function enableCam(event) {
+
+      // getUsermedia parameters.
+      const constraints = {
+        video: true
+      };
+
+      // Activate the webcam stream.
+      navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+        // get width and height of video stream
+        const videoHeight = stream.getVideoTracks()[0].getSettings().height;
+        const videoWidth = stream.getVideoTracks()[0].getSettings().width;
+        window.videoHeight = videoHeight;
+        window.videoWidth = videoWidth;
+        video.srcObject = stream;
+      });
+    }
+
+    /********************************************************************
+    Detection.
+    ********************************************************************/
+
     // import {
     //     PoseLandmarker,
     //     FilesetResolver,
@@ -95,6 +153,8 @@
     let webcamRunning = true;
 
     loadPoseLandmarker().then(({ PoseLandmarker, FilesetResolver, DrawingUtils }) => {
+      video.addEventListener("loadeddata", predictWebcam);
+
       // Before we can use PoseLandmarker class we must wait for it to finish
       // loading. Machine Learning models can be large and take a moment to
       // get everything needed to run.
@@ -120,57 +180,8 @@
       createPoseLandmarker();
       console.log("PoseLandmarker is loading...");
 
-
-      /********************************************************************
-      Continuously grab image from webcam stream and detect it.
-      ********************************************************************/
-
-      const video = document.getElementById("webcam");
-      // turn off display of video element
-      
-      const canvasElement = document.getElementById("output_canvas");
-      const canvasCtx = canvasElement.getContext("2d");
-      const drawingUtils = new DrawingUtils(canvasCtx);
-      // trun off display of canvas element
-      canvasElement.style.display = "none";
-      // Create a canvas element to display the final output.
-      const finalCanvasElement = document.getElementById("final_canvas");
-      const finalCanvasCtx = finalCanvasElement.getContext("2d");
-      finalCanvasElement.style.display = "block";
-      adjustCanvasSize();
-
-      // Check if webcam access is supported.
-      const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
-
-      // If webcam supported, add event listener to button for when user
-      // wants to activate it.
-      if (hasGetUserMedia()) {
-        enableCam();
-      } else {
-        console.warn("getUserMedia() is not supported by your browser");
-      }
-
-      // Enable the live webcam view and start detection.
-      function enableCam(event) {
-
-        // getUsermedia parameters.
-        const constraints = {
-          video: true
-        };
-
-        // Activate the webcam stream.
-        navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-          // get width and height of video stream
-          const videoHeight = stream.getVideoTracks()[0].getSettings().height;
-          const videoWidth = stream.getVideoTracks()[0].getSettings().width;
-          window.videoHeight = videoHeight;
-          window.videoWidth = videoWidth;
-          video.srcObject = stream;
-          video.addEventListener("loadeddata", predictWebcam);
-        });
-      }
-
       let lastVideoTime = -1;
+      const drawingUtils = new DrawingUtils(canvasCtx);
       
       async function predictWebcam() {
         canvasElement.style.height = videoHeight;
@@ -221,12 +232,6 @@
         if (webcamRunning === true) {
           window.requestAnimationFrame(predictWebcam);
         }
-      }
-      function adjustCanvasSize() {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        finalCanvasElement.width = width;
-        finalCanvasElement.height = height;
       }
 
       // window.addEventListener('resize', adjustCanvasSize);
